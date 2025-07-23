@@ -1,55 +1,31 @@
 import json
-from typing import List, Optional
 from datetime import datetime
 from pydantic import BaseModel
 from langchain_core.runnables import RunnableConfig
-from langchain_core.messages import SystemMessage, ToolMessage, AIMessage
-from langgraph.graph import create_react_agent
-from langgraph.graph import RunnableGraph
-from langgraph.graph.message import MessagesState
-from langgraph.store.base import BaseStore
-from langchain_core.tools import tool
-from langchain_core.runnables import Runnable
-
-from langgraph.prebuilt import ToolNode, create_react_agent
+from langchain_core.messages import SystemMessage, ToolMessage
+from langgraph.prebuilt import ToolNode
 from .state import SupervisorState
-from ..memory import SemanticMemory, EpisodicMemory, ProceduralMemory
+from ..memory import EpisodicMemory
 from .tools import available_tools
 from ..config import get_llm, LLMConfig
+from ..agents import create_react_agent
+
 # --- LLM and Tool Executor Setup ---
-
-
-# The ToolNode is a LangGraph helper that executes tools and returns the output
-# It's our "Do" step.
 tool_executor = ToolNode(available_tools)
 
 # --- Node Implementations ---
-
-async def pre_tool_response_node(state: SupervisorState, config: RunnableConfig) -> SupervisorState:
-    """
-    If the LLM set `state.feedback` _and_ also selected a tool,
-    send that feedback as an Assistant message _before_ invoking the tool.
-    Then clear feedback so we don’t loop.
-    """
-    if state.feedback:
-        state["messages"] = AIMessage(
-            state.get("messages", []),
-            {"role": "assistant", "content": state.feedback}
-        )
-        state.feedback = None
-    return state
-
 async def planner_node(state: SupervisorState, config: RunnableConfig) -> dict:
     """
     Plan Step: Receives the user request, searches memory, and decides which tool to call.
     """
     # Get the latest user message
     user_message = state["messages"][-1].content
-    
+    memory_manager = state["memory_manager"]
+
     # Search all memory types for relevant context
-    semantic_mem = SemanticMemory.search(namespace="semantic", query=user_message, k=3)
-    episodic_mem = EpisodicMemory.search(namespace="episodic", query=user_message, k=2)
-    procedural_mem = ProceduralMemory.search(namespace="procedural", query=user_message, k=1)
+    semantic_mem = memory_manager.search(namespace="semantic", query=user_message, k=3)
+    episodic_mem = memory_manager.search(namespace="episodic", query=user_message, k=2)
+    procedural_mem = memory_manager.search(namespace="procedural", query=user_message, k=1)
 
     # Construct the system prompt with memory
     system_prompt = f"""You are a world-class supervisor agent. Your goal is to fulfill the user's request by intelligently orchestrating a team of specialized agents (available as tools).
@@ -75,23 +51,21 @@ Here is some information from your memory that might be relevant:
     messages = [SystemMessage(content=system_prompt)] + state["messages"]
     
     # Bind tools to the LLM to force a tool call
-    
-    # create_react_agent(model="google:gemini-2.5-pro").bind_tools(available_tools)
     llm_config = config["configurable"].get("llm_config", LLMConfig(temperature=0.65))
     llm_with_tools = get_llm(llm_config).bind_tools(available_tools)
-    #
+
     # Invoke the LLM to get the next tool call
     response = await llm_with_tools.ainvoke(messages)
     
     # The response can be a direct answer or a tool call
     if not response.tool_calls:
-         # If no tool is called, it means the agent thinks the task is done
+        # If no tool is called, it means the agent thinks the task is done
         return {"task_complete": True}
         
     return {"tool_call": response.tool_calls[0]}
 
 
-async def reviewer_node(state: SupervisorState) -> dict:
+async def reviewer_node(state: SupervisorState, config: RunnableConfig) -> dict:
     """
     Review Step: Assesses the result of the tool call and decides if the task is complete.
     Also responsible for saving new memories.
@@ -129,12 +103,14 @@ Respond with a JSON object with two keys:
         is_complete: bool
         memory_summary: str
         
-    structured_reviewer = create_react_agent(model="groq:qwen/qwen3-32b").with_structured_output(Review)
+    llm_config = config["configurable"].get("llm_config", LLMConfig(temperature=0.1))
+    structured_reviewer = create_react_agent(get_llm(llm_config)).with_structured_output(Review)
     review = await structured_reviewer.ainvoke(review_prompt)
     
     if review.is_complete and review.memory_summary:
         # Save new memories if the task is done
-        Me.add(
+        memory_manager = state["memory_manager"]
+        memory_manager.add(
             namespace="episodic",
             documents=[EpisodicMemory(
                 timestamp=datetime.now().isoformat(),

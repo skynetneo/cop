@@ -102,7 +102,7 @@ available_tools = (
     [resources_tool, research_tool, phone_tool, python_repl_tool, tts_tool]
     + gmail_tools
     + calendar_tools
-   
+    + playwright_tools
 )
 
 # Create a dictionary for easy lookup by name
