@@ -46,3 +46,12 @@ If applicable, call the 'new_rule' tool to create the new rule. If no new rule i
 
 Remember to be thorough in your analysis, clear in your decision-making, and precise in your rule formulation if one is needed.`;
 """
+class Prompts:
+    def __init__(self):
+        self.reflection_prompt = REFLECTION_PROMPT
+
+     
+
+def get_prompts() -> Prompts:
+    # This factory function makes it easy to manage and access prompts.
+    return Prompts()

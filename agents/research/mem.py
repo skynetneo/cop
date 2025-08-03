@@ -5,12 +5,10 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from langchain.chat_models import init_chat_model
 from langgraph.store.memory import InMemoryStore
 from langgraph.func import entrypoint
-from langgraph import (
-    create_react_agent,
-    create_search_memory_tool,
-    create_manage_memory_tool,
-)
-from langgraph.checkpoint.sqlite import AsyncSqliteSaver
+from langgraph.prebuilt import create_react_agent
+from langmem import create_manage_memory_tool, create_search_memory_tool
+from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
+
 
 from langmem import (
     ReflectionExecutor,
@@ -20,7 +18,7 @@ from langmem import (
 
 LLM =  "google:gemini-2.5-pro-latest"
 EMBED_MODEL = "google:gemini-embedding-exp-03-07"
-LLM_ID = "google:gemini-2.5-flash-lite-preview-06-17"  
+LLM_ID = "google:gemini-2.5-flash-lite"  
 VECTOR_DIM = 1536
 SQLITE_PATH = "langgraph.db"
 
@@ -48,9 +46,10 @@ class EpisodeRecord(BaseModel):
     resolution: str  = Field(..., description="How it was solved or key takeaway.")
 
 memory_manager = create_memory_store_manager(
-    model=LLM_ID,
-    namespace=("semantic", "episodes"),
-    schemas=[FactRecord, EpisodeRecord],
+    LLM_ID,
+    EMBED_MODEL,
+    ("semantic", "episodes"),  # namespace as positional argument
+    [FactRecord, EpisodeRecord],  # schemas as positional argument
     instructions=(
         "For semantic memory, store atomic facts under FactRecord.\n"
         "For episodic memory, store problem solving examples under EpisodeRecord."
@@ -59,10 +58,6 @@ memory_manager = create_memory_store_manager(
     memory_store=memory_store,
 )
 
-reflector = ReflectionExecutor(
-    llm=LLM,
-    memory_namespace=("semantic", "episodes"),
-)
 
 memory_review_agent = create_react_agent(
     model=LLM,

@@ -5,7 +5,6 @@ from pydantic import BaseModel, Field
 from langchain_core.runnables import RunnableConfig
 from langchain_core.messages import SystemMessage, ToolMessage, HumanMessage, AIMessage
 from langgraph.graph import StateGraph, START, END
-from langgraph.checkpoint.sqlite import AsyncSqliteSaver
 from langgraph import RunnableConfig
 from langchain.prompts import ChatPromptTemplate
 from .state import SupervisorState
@@ -63,7 +62,8 @@ supervisor_agent = Supervisor().graph
 # --- Prompts ---
 TOOL_CALL_PROMPT =  ChatPromptTemplate.from_messages([
     ("system", """You are an AI supervisor orchestrating tasks for a user.
-Your goal is to understand the user's request, devise a plan, and delegate steps to specialized agents (tools).
+Your goal is to understand the user's request if the user has a simple question you may answer directly, but if
+the user has a complicated request devise a plan, and delegate steps to specialized agents (tools).
 If a request can be fulfilled by a single tool, call it directly. If it requires multiple steps, generate a plan.
 
 **Available Tools:**

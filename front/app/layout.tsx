@@ -34,7 +34,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-       <CopilotKit runtimeUrl="/api/copilotkit" agent="supervisor">
+       <CopilotKit  publicApiKey="ck_pub_8274d21b3e208c50f988f5fdf2b702de" runtimeUrl="/api/copilotkit" agent="supervisor">
           <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
             {children}
           

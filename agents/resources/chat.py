@@ -1,9 +1,14 @@
 import json
 from .state import AgentState
 from langchain_core.messages import SystemMessage
-from langchain_openai import ChatOpenAI
+from langgraph.prebuilt import create_react_agent
 from .search import search_for_agencies
 from langchain_core.runnables import RunnableConfig
+import os
+import asyncio
+import dotenv
+
+dotenv.load_dotenv()
 
 # This is a placeholder tool for the new frontend action
 from langchain_core.tools import tool
@@ -15,7 +20,8 @@ def display_agencies(category_name: str, agencies: list):
     # The backend just needs to know it exists to call it.
     return f"Displayed {len(agencies)} agencies for the category: {category_name}"
 
-llm = ChatOpenAI(model="gpt-4o")
+llm = create_react_agent(model="google:gemini-2.5-pro")
+
 tools = [search_for_agencies, display_agencies]
 
 async def chat_node(state: AgentState, config: RunnableConfig):

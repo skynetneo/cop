@@ -2,17 +2,15 @@ import {
   CopilotRuntime,
   ExperimentalEmptyAdapter,
   copilotRuntimeNextJSAppRouterEndpoint,
-  langGraphPlatformEndpoint,
-  LangGraphHttpAgent
-} from "@copilotkit/runtime";;
+  LangGraphHttpAgent,
+} from "@copilotkit/runtime";
 import { NextRequest } from "next/server";
  
 // You can use any service adapter here for multi-agent support.
 const serviceAdapter = new ExperimentalEmptyAdapter();
  
 const runtime = new CopilotRuntime({
-  agents: 
-    {
+  agents: {
       'supervisor': new LangGraphHttpAgent({ url: "http://localhost:8000/copilotkit" })},
   
 });

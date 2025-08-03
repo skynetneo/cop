@@ -1,0 +1,14 @@
+[tool.poetry]
+name = "cop"
+version = "0.1.0"
+description = "accessible solutions website"
+authors = ["kynetneo"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
