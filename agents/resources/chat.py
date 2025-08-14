@@ -20,13 +20,11 @@ def display_agencies(category_name: str, agencies: list):
     # The backend just needs to know it exists to call it.
     return f"Displayed {len(agencies)} agencies for the category: {category_name}"
 
-llm = create_react_agent(model="google:gemini-2.5-pro")
+llm = create_react_agent(model="google:gemini-2.5-pro", tools=[search_for_agencies, display_agencies])
 
-tools = [search_for_agencies, display_agencies]
 
 async def chat_node(state: AgentState, config: RunnableConfig):
     """Handle chat operations for finding local resources."""
-    llm_with_tools = llm.bind_tools(tools, parallel_tool_calls=False)
 
     system_message = f"""
     You are a helpful assistant for finding local social service agencies. Your goal is to understand the user's need (e.g., food, clothing, shelter) and help them find relevant local resources.
@@ -37,7 +35,7 @@ async def chat_node(state: AgentState, config: RunnableConfig):
     4.  **Do not manage lists**: You do not have tools to add, update, or delete agencies or categories. All interactions are through chat. If the user wants to change something, they should ask you to search again or refine their request.
     """
 
-    response = await llm_with_tools.ainvoke(
+    response = await llm.ainvoke(
         [
             SystemMessage(content=system_message),
             *state["messages"]
