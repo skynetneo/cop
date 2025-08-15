@@ -5,6 +5,7 @@ from .sub_agent import SubAgent, _create_task_tool
 from .tools import write_todos, write_file, read_file, ls, edit_file
 from langchain_core.tools import BaseTool
 from langchain_core.language_models import LanguageModelLike
+from .supervisor_agent import get_supervisor_agent
 
 __all__ = [
     "create_deep_agent",
@@ -21,4 +22,5 @@ __all__ = [
     "edit_file",
     "BaseTool",
     "LanguageModelLike",
+    "get_supervisor_agent",
 ]
