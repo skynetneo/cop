@@ -19,7 +19,6 @@ from copilotkit import HandlerBuilder
 from google.generativeai import Client as GeminiClient
 from ..tools.tts import text_to_audio_stream, AsyncGenerator
 
-### CHANGE: Import the prompts from the new prompt.py file
 from prompt import DEFAULT_SYSTEM_PROMPT, SMS_SYSTEM_PROMPT
 
 # ENV CONFIG
@@ -160,7 +159,6 @@ generate_node = Node(
 graph.add_node(generate_node)
 graph.add_edge("transcribe", "generate")
 
-# --- CHANGE: Update the TTS node to use the new handler ---
 tts_node = Node(
     "tts", 
     func=twilio_tts_handler, 
@@ -226,12 +224,10 @@ async def media_stream(
 
 builder.register(app)
 
-### CHANGE: Update root route to serve the new GUI
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
-### CHANGE: Update /make-call to use form data from the new GUI
 @app.post("/make-call")
 async def make_call(
     request: Request,
